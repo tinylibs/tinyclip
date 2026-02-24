@@ -31,25 +31,21 @@ jobs:
           # Test xclip on Ubuntu with Node 22
           - node-version: 22.x
             os: ubuntu-latest
-            clipboard-tool: xclip
             install-cmd: sudo apt-get update && sudo apt-get install -y xclip xvfb
             test-cmd: xvfb-run -a pnpm test
           # Test xsel on Ubuntu with Node 22
           - node-version: 22.x
             os: ubuntu-latest
-            clipboard-tool: xsel
             install-cmd: sudo apt-get update && sudo apt-get install -y xsel xvfb
             test-cmd: xvfb-run -a pnpm test
           # Test xclip on Ubuntu with Node 24
           - node-version: 24.x
             os: ubuntu-latest
-            clipboard-tool: xclip
             install-cmd: sudo apt-get update && sudo apt-get install -y xclip xvfb
             test-cmd: xvfb-run -a pnpm test
           # Test xsel on Ubuntu with Node 24
           - node-version: 24.x
             os: ubuntu-latest
-            clipboard-tool: xsel
             install-cmd: sudo apt-get update && sudo apt-get install -y xsel xvfb
             test-cmd: xvfb-run -a pnpm test
           # We do not test wl-copy/wl-paste as setting up wayland in CI is tricky
@@ -71,7 +67,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
       - name: Install Clipboard Tool
-        if: matrix.clipboard-tool
+        if: matrix.install-cmd
         run: ${{ matrix.install-cmd }}
       - name: Install Dependencies
         run: pnpm install
