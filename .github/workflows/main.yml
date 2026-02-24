@@ -22,12 +22,6 @@ jobs:
             clipboard-tool: xsel
             install-cmd: sudo apt-get update && sudo apt-get install -y xsel xvfb
             test-cmd: xvfb-run -a pnpm test
-          # Test wl-paste on Ubuntu with Node 22 (Wayland)
-          - node-version: 22.x
-            os: ubuntu-latest
-            clipboard-tool: wl-paste
-            install-cmd: sudo apt-get update && sudo apt-get install -y wl-clipboard weston xwayland
-            test-cmd: weston --backend=headless-backend.so --width=800 --height=600 & sleep 2 && WAYLAND_DISPLAY=wayland-1 pnpm test
           # Test xclip on Ubuntu with Node 24
           - node-version: 24.x
             os: ubuntu-latest
@@ -40,12 +34,7 @@ jobs:
             clipboard-tool: xsel
             install-cmd: sudo apt-get update && sudo apt-get install -y xsel xvfb
             test-cmd: xvfb-run -a pnpm test
-          # Test wl-paste on Ubuntu with Node 24 (Wayland)
-          - node-version: 24.x
-            os: ubuntu-latest
-            clipboard-tool: wl-paste
-            install-cmd: sudo apt-get update && sudo apt-get install -y wl-clipboard weston xwayland
-            test-cmd: weston --backend=headless-backend.so --width=800 --height=600 & sleep 2 && WAYLAND_DISPLAY=wayland-1 pnpm test
+          # We do not test wl-copy/wl-paste as setting up wayland in CI is tricky
           # We only test Node 24 on macOS and Windows to reduce CI usage
           - node-version: 24.x
             os: macos-14
