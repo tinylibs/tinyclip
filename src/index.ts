@@ -6,18 +6,37 @@ import {
   StdioPipe
 } from 'node:child_process';
 
-export async function readText(): Promise<string> {
-  return new Promise((resolve, reject) => {
+function checkUnixCommandExists(command: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const proc = spawn('which', [command]);
+    let data = '';
+    proc.stdout.on('data', (chunk) => (data += chunk));
+    proc.on('error', () => resolve(false));
+    proc.on('close', (code) => resolve(code === 0));
+  });
+}
+
+export function readText(): Promise<string> {
+  return new Promise(async (resolve, reject) => {
     let proc;
     if (process.platform === 'darwin') {
       proc = spawn('pbpaste');
     } else if (process.platform === 'win32') {
       proc = spawn('powershell', ['Get-Clipboard']);
     } else {
-      proc =
-        spawn('xclip', ['-selection', 'clipboard', '-o']) ||
-        spawn('xsel', ['--clipboard', '--output']) ||
-        spawn('wl-paste');
+      // Unix: check if a supported command is installed
+      const unixCommands: Array<[string, Array<string>]> = [
+        ['xclip', ['-selection', 'clipboard', '-o']],
+        ['xsel', ['--clipboard', '--output']],
+        ['wl-paste', []]
+      ];
+      for (const [unixCommand, unixArgs] of unixCommands) {
+        const exists = await checkUnixCommandExists(unixCommand);
+        if (exists) {
+          proc = spawn(unixCommand, unixArgs);
+          break;
+        }
+      }
     }
 
     if (!proc) return reject(new Error('No clipboard tool found'));
@@ -35,8 +54,8 @@ export async function readText(): Promise<string> {
   });
 }
 
-export async function writeText(text: string): Promise<void> {
-  return new Promise((resolve, reject) => {
+export function writeText(text: string): Promise<void> {
+  return new Promise(async (resolve, reject) => {
     let proc;
     const options: SpawnOptionsWithStdioTuple<StdioPipe, StdioNull, StdioNull> =
       {stdio: ['pipe', 'ignore', 'ignore']};
@@ -46,10 +65,19 @@ export async function writeText(text: string): Promise<void> {
     } else if (process.platform === 'win32') {
       proc = spawn('clip', options);
     } else {
-      proc =
-        spawn('xclip', ['-selection', 'clipboard'], options) ||
-        spawn('xsel', ['--clipboard', '--input'], options) ||
-        spawn('wl-copy', options);
+      // Unix: check if a supported command is installed
+      const unixCommands: Array<[string, Array<string>]> = [
+        ['xclip', ['-selection', 'clipboard']],
+        ['xsel', ['--clipboard', '--input']],
+        ['wl-copy', []]
+      ];
+      for (const [unixCommand, unixArgs] of unixCommands) {
+        const exists = await checkUnixCommandExists(unixCommand);
+        if (exists) {
+          proc = spawn(unixCommand, unixArgs, options);
+          break;
+        }
+      }
     }
 
     if (!proc) return reject(new Error('No clipboard tool found'));
