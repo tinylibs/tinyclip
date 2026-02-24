@@ -6,6 +6,5 @@
   "tabWidth": 2,
   "trailingComma": "none",
   "useTabs": false,
-  "arrowParens": "always",
-  "endOfLine": "lf"
+  "arrowParens": "always"
 }
