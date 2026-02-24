@@ -51,12 +51,16 @@ export function readText(): Promise<string> {
     let data = '';
     proc.stdout.on('data', (chunk) => (data += chunk));
     proc.on('error', (cause) =>
-      reject(new Error('An error occurred while copying', {cause}))
+      reject(
+        new Error('An error occurred while reading from clipboard', {cause})
+      )
     );
     proc.on('close', (code) =>
       code === 0
         ? resolve(data.trim())
-        : reject(new Error('An unknown error occurred while copying'))
+        : reject(
+            new Error('An unknown error occurred while reading from clipboard')
+          )
     );
   });
 }
