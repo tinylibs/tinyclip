@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "outDir": "./lib",
+    "outDir": "./dist",
     "module": "node18",
     "target": "esnext",
+    "rootDir": "src",
     "types": [],
     "sourceMap": false,
     "declaration": true,
@@ -17,7 +18,9 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "isolatedDeclarations": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["**/*.test.ts"]
 }
