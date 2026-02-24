@@ -17,7 +17,7 @@ function checkUnixCommandExists(command: string): Promise<boolean> {
       resolve(false);
     });
     proc.on('close', (code) => {
-      console.log({ code, data })
+      console.log({code, data});
       resolve(code === 0);
     });
   });
