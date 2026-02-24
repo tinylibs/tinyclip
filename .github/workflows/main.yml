@@ -73,4 +73,4 @@ jobs:
       - name: Lint
         run: pnpm lint
       - name: Test
-        run: ${{ matrix.test-cmd || 'pnpm test }}
+        run: ${{ matrix.test-cmd || 'pnpm test' }}
