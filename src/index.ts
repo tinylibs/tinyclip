@@ -7,19 +7,10 @@ import {
 } from 'node:child_process';
 
 function checkUnixCommandExists(command: string): Promise<boolean> {
-  console.log(command);
   return new Promise((resolve) => {
     const proc = spawn('which', [command]);
-    let data = '';
-    proc.stdout.on('data', (chunk) => (data += chunk));
-    proc.on('error', (err) => {
-      console.log(err);
-      resolve(false);
-    });
-    proc.on('close', (code) => {
-      console.log({code, data});
-      resolve(code === 0);
-    });
+    proc.on('error', () => resolve(false));
+    proc.on('close', (code) => resolve(code === 0));
   });
 }
 
