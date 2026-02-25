@@ -1,10 +1,13 @@
 /// <reference types="node" />
 import {
   spawn,
+  SpawnOptionsWithoutStdio,
   SpawnOptionsWithStdioTuple,
   StdioNull,
   StdioPipe
 } from 'node:child_process';
+
+const TIMEOUT = 2000;
 
 function checkUnixCommandExists(command: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -26,29 +29,26 @@ const UNIX_READ_COMMANDS: Array<Command> = [
   WINDOWS_READ_COMMAND
 ];
 
-const WINDOWS_WRITE_COMMAND: Command = ['clip', []];
+const READ_OPTIONS: SpawnOptionsWithoutStdio = {
+  signal: AbortSignal.timeout(TIMEOUT)
+};
 
-const UNIX_WRITE_COMMANDS: Array<Command> = [
-  ['wl-copy', []],
-  ['xsel', ['--clipboard', '--input']],
-  ['xclip', ['-selection', 'clipboard', '-i']],
-  // wsl
-  WINDOWS_WRITE_COMMAND
-];
-
+/**
+ * Reads text from the clipboard.
+ */
 export function readText(): Promise<string> {
   return new Promise(async (resolve, reject) => {
     let proc;
     if (process.platform === 'darwin') {
-      proc = spawn('pbpaste');
+      proc = spawn('pbpaste', READ_OPTIONS);
     } else if (process.platform === 'win32') {
-      proc = spawn(...WINDOWS_READ_COMMAND);
+      proc = spawn(...WINDOWS_READ_COMMAND, READ_OPTIONS);
     } else {
       // Unix: check if a supported command is installed
       for (const [unixCommand, unixArgs] of UNIX_READ_COMMANDS) {
         const exists = await checkUnixCommandExists(unixCommand);
         if (exists) {
-          proc = spawn(unixCommand, unixArgs);
+          proc = spawn(unixCommand, unixArgs, READ_OPTIONS);
           break;
         }
       }
@@ -73,22 +73,42 @@ export function readText(): Promise<string> {
   });
 }
 
+const WINDOWS_WRITE_COMMAND: Command = ['clip', []];
+
+const UNIX_WRITE_COMMANDS: Array<Command> = [
+  ['wl-copy', []],
+  ['xsel', ['--clipboard', '--input']],
+  ['xclip', ['-selection', 'clipboard', '-i']],
+  // wsl
+  WINDOWS_WRITE_COMMAND
+];
+
+const WRITE_OPTIONS: SpawnOptionsWithStdioTuple<
+  StdioPipe,
+  StdioNull,
+  StdioNull
+> = {
+  stdio: ['pipe', 'ignore', 'ignore'],
+  signal: AbortSignal.timeout(TIMEOUT)
+};
+
+/**
+ * Writes text to the clipboard.
+ */
 export function writeText(text: string): Promise<void> {
   return new Promise(async (resolve, reject) => {
     let proc;
-    const options: SpawnOptionsWithStdioTuple<StdioPipe, StdioNull, StdioNull> =
-      {stdio: ['pipe', 'ignore', 'ignore']};
 
     if (process.platform === 'darwin') {
-      proc = spawn('pbcopy', options);
+      proc = spawn('pbcopy', WRITE_OPTIONS);
     } else if (process.platform === 'win32') {
-      proc = spawn(...WINDOWS_WRITE_COMMAND, options);
+      proc = spawn(...WINDOWS_WRITE_COMMAND, WRITE_OPTIONS);
     } else {
       // Unix: check if a supported command is installed
       for (const [unixCommand, unixArgs] of UNIX_WRITE_COMMANDS) {
         const exists = await checkUnixCommandExists(unixCommand);
         if (exists) {
-          proc = spawn(unixCommand, unixArgs, options);
+          proc = spawn(unixCommand, unixArgs, WRITE_OPTIONS);
           break;
         }
       }
