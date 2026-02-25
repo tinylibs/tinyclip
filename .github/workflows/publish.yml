@@ -19,6 +19,8 @@ jobs:
           cache: pnpm
       - name: Install Dependencies
         run: pnpm install
+      - name: Install Clipboard Tool
+        run: sudo apt-get update && sudo apt-get install -y xsel xvfb
       - name: Build
         run: pnpm build
       - name: Lint
