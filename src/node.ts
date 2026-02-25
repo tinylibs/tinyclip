@@ -1,38 +1,12 @@
 /// <reference types="node" />
 import {spawn} from 'node:child_process';
-
-interface SpawnProcess {
-  on: <T extends 'error' | 'close'>(
-    eventName: T,
-    cb: (
-      ...args: T extends 'error' ? [cause: Error] : [code: number | null]
-    ) => void
-  ) => void;
-  stdin: {
-    write: (text: string) => void;
-    end: () => void;
-  } | null;
-  stdout: {
-    on: (eventName: 'data', cb: (chunk: string) => void) => void;
-  } | null;
-}
-
-interface ProcessSpawnerOptions {
-  signal?: AbortSignal;
-  stdio?: ['pipe', 'ignore', 'ignore'];
-}
-
-interface ProcessSpawner {
-  spawn: (
-    commmand: string,
-    args: Array<string>,
-    options: ProcessSpawnerOptions
-  ) => SpawnProcess;
-}
-
-interface CommandProvider {
-  get: () => Promise<Command | undefined>;
-}
+import {
+  Command,
+  CommandProvider,
+  ProcessSpawner,
+  ProcessSpawnerOptions,
+  SpawnProcess
+} from './types.js';
 
 export class NodeProcessSpawner implements ProcessSpawner {
   spawn(
@@ -140,8 +114,6 @@ function checkUnixCommandExists({
     proc.on('close', (code) => resolve(code === 0));
   });
 }
-
-type Command = [string, Array<string>];
 
 export function readTextInternal({
   processSpawner,

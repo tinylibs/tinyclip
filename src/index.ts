@@ -4,16 +4,19 @@ import {
   writeTextInternal,
   NodeReadCommandProvider,
   NodeWriteCommandProvider
-} from './internal.js';
+} from './node.js';
 
 const processSpawner = new NodeProcessSpawner();
+const readCommandProvider = new NodeReadCommandProvider(processSpawner);
+const writeCommandProvider = new NodeWriteCommandProvider(processSpawner);
+
 /**
  * Reads text from the clipboard.
  */
 export function readText(): Promise<string> {
   return readTextInternal({
     processSpawner,
-    commandProvider: new NodeReadCommandProvider(processSpawner)
+    commandProvider: readCommandProvider
   });
 }
 
@@ -24,6 +27,6 @@ export function writeText(text: string): Promise<void> {
   return writeTextInternal({
     text,
     processSpawner,
-    commandProvider: new NodeWriteCommandProvider(processSpawner)
+    commandProvider: writeCommandProvider
   });
 }

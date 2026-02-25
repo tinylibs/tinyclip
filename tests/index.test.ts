@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import * as clipboard from '../src/index.js';
-import {readTextInternal, writeTextInternal} from '../src/internal.js';
+import {readTextInternal, writeTextInternal} from '../src/node.js';
 
 describe('clipboard', () => {
   it('should export correct API', () => {
@@ -20,7 +20,9 @@ describe('clipboard', () => {
         await expect(
           writeTextInternal({
             text: 'foo',
-            platform: 'linux',
+            commandProvider: {
+              get: async () => undefined
+            },
             processSpawner: {
               spawn: () => {
                 return {
@@ -43,7 +45,9 @@ describe('clipboard', () => {
         await expect(
           writeTextInternal({
             text: 'foo',
-            platform: 'darwin',
+            commandProvider: {
+              get: async () => ['foo', []]
+            },
             processSpawner: {
               spawn: () => {
                 return {
@@ -66,7 +70,9 @@ describe('clipboard', () => {
         await expect(
           writeTextInternal({
             text: 'foo',
-            platform: 'darwin',
+            commandProvider: {
+              get: async () => ['foo', []]
+            },
             processSpawner: {
               spawn: () => {
                 return {
@@ -91,7 +97,9 @@ describe('clipboard', () => {
     it('throws an error if no tool can be found', async () => {
       await expect(
         readTextInternal({
-          platform: 'linux',
+          commandProvider: {
+            get: async () => undefined
+          },
           processSpawner: {
             spawn: () => {
               return {
@@ -113,7 +121,9 @@ describe('clipboard', () => {
     it('throws an error if copying goes wrong', async () => {
       await expect(
         readTextInternal({
-          platform: 'darwin',
+          commandProvider: {
+            get: async () => ['foo', []]
+          },
           processSpawner: {
             spawn: () => {
               return {
@@ -135,7 +145,9 @@ describe('clipboard', () => {
     it('throws an error if it does not close properly', async () => {
       await expect(
         readTextInternal({
-          platform: 'darwin',
+          commandProvider: {
+            get: async () => ['foo', []]
+          },
           processSpawner: {
             spawn: () => {
               return {
