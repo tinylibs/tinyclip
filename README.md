@@ -11,11 +11,11 @@ npm install tinyclip
 ## Usage
 
 ```js
-import { readText, writeText } from 'tinyclip'
+import {readText, writeText} from 'tinyclip';
 
 // Async
-await writeText('hello world')
-const text = await readText()
+await writeText('hello world');
+const text = await readText();
 ```
 
 ## API

@@ -8,7 +8,9 @@
     "copy",
     "paste"
   ],
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "homepage": "https://github.com/tinylibs/tinyclip#readme",
   "bugs": {
     "url": "https://github.com/tinylibs/tinyclip/issues"
@@ -30,9 +32,9 @@
   "scripts": {
     "build": "tsgo --build",
     "test": "vitest run",
-    "format": "prettier --write src",
+    "format": "prettier --write .",
     "lint": "pnpm lint:format",
-    "lint:format": "prettier --check src"
+    "lint:format": "prettier --check ."
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
