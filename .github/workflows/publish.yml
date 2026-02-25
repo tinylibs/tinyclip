@@ -46,7 +46,7 @@ jobs:
       - run: pnpm version ${TAG_NAME} --git-tag-version=false
         env:
           TAG_NAME: ${{ github.ref_name }}
-      - run: pnpm publish --provenance --access public --tag next
+      - run: pnpm publish --provenance --access public --tag next --no-git-checks
         if: 'github.event.release.prerelease'
-      - run: pnpm publish --provenance --access public
+      - run: pnpm publish --provenance --access public --no-git-checks
         if: '!github.event.release.prerelease'
