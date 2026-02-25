@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import * as clipboard from './index.js';
+import * as clipboard from '../src/index.js';
 
 describe('clipboard', () => {
   it('should export correct API', () => {

@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
-    "outDir": "./dist",
     "module": "node18",
     "target": "esnext",
-    "rootDir": "src",
     "types": [],
     "sourceMap": false,
     "declaration": true,
@@ -21,6 +19,10 @@
     "skipLibCheck": true,
     "isolatedDeclarations": true
   },
-  "include": ["src"],
-  "exclude": ["**/*.test.ts"]
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.src.json" },
+    { "path": "./tsconfig.tests.json" }
+  ]
 }
+

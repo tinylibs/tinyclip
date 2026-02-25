@@ -28,7 +28,7 @@
     }
   },
   "scripts": {
-    "build": "tsgo",
+    "build": "tsgo --build",
     "test": "vitest run",
     "format": "prettier --write src",
     "lint": "pnpm lint:format",

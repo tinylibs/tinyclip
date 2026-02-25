@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": true,
+    "tsBuildInfoFile": "node_modules/.tmp/tsconfig.tests.tsbuildinfo"
+  },
+  "include": ["tests"],
+  "references": [{ "path": "./tsconfig.src.json" }]
+}
