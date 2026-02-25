@@ -5,7 +5,15 @@ const TIMEOUT = 2000;
 
 type Command = [string, Array<string>];
 
-function getReadCommand(): Command | undefined {
+function checkUnixCommandExists(command: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const proc = spawn('which', [command]);
+    proc.on('error', () => resolve(false));
+    proc.on('close', (code) => resolve(code === 0));
+  });
+}
+
+async function getReadCommand(): Promise<Command | undefined> {
   switch (process.platform) {
     case 'darwin':
       return ['pbpaste', []];
@@ -20,6 +28,9 @@ function getReadCommand(): Command | undefined {
       if (process.env.WSL_DISTRO_NAME) {
         return ['powershell.exe', ['-noprofile', '-command', 'Get-Clipboard']];
       }
+      if (await checkUnixCommandExists('xsel')) {
+        return ['xsel', ['--clipboard', '--output']];
+      }
       return ['xclip', ['-selection', 'clipboard', '-o']];
     case 'android':
       return ['termux-clipboard-get', []];
@@ -33,7 +44,7 @@ function getReadCommand(): Command | undefined {
  */
 export function readText(): Promise<string> {
   return new Promise(async (resolve, reject) => {
-    const command = getReadCommand();
+    const command = await getReadCommand();
     if (!command) {
       return reject(new Error('No clipboard tool found'));
     }
@@ -59,7 +70,7 @@ export function readText(): Promise<string> {
   });
 }
 
-function getWriteCommand(): Command | undefined {
+async function getWriteCommand(): Promise<Command | undefined> {
   switch (process.platform) {
     case 'darwin':
       return ['pbcopy', []];
@@ -74,6 +85,9 @@ function getWriteCommand(): Command | undefined {
       if (process.env.WAYLAND_DISPLAY) {
         return ['wl-copy', []];
       }
+      if (await checkUnixCommandExists('xsel')) {
+        return ['xsel', ['--clipboard', '--input']];
+      }
       return ['xclip', ['-selection', 'clipboard', '-i']];
     case 'android':
       return ['termux-clipboard-set', []];
@@ -87,7 +101,7 @@ function getWriteCommand(): Command | undefined {
  */
 export function writeText(text: string): Promise<void> {
   return new Promise(async (resolve, reject) => {
-    const command = getWriteCommand();
+    const command = await getWriteCommand();
     if (!command) {
       return reject(new Error('No clipboard tool found'));
     }
