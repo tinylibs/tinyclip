@@ -14,6 +14,18 @@ function checkUnixCommandExists(command: string): Promise<boolean> {
   });
 }
 
+const UNIX_READ_COMMANDS: Array<[string, Array<string>]> = [
+  ['xclip', ['-selection', 'clipboard', '-o']],
+  ['xsel', ['--clipboard', '--output']],
+  ['wl-paste', []]
+];
+
+const UNIX_WRITE_COMMANDS: Array<[string, Array<string>]> = [
+  ['xclip', ['-selection', 'clipboard']],
+  ['xsel', ['--clipboard', '--input']],
+  ['wl-copy', []]
+];
+
 export function readText(): Promise<string> {
   return new Promise(async (resolve, reject) => {
     let proc;
@@ -23,12 +35,7 @@ export function readText(): Promise<string> {
       proc = spawn('powershell', ['Get-Clipboard']);
     } else {
       // Unix: check if a supported command is installed
-      const unixCommands: Array<[string, Array<string>]> = [
-        ['xclip', ['-selection', 'clipboard', '-o']],
-        ['xsel', ['--clipboard', '--output']],
-        ['wl-paste', []]
-      ];
-      for (const [unixCommand, unixArgs] of unixCommands) {
+      for (const [unixCommand, unixArgs] of UNIX_READ_COMMANDS) {
         const exists = await checkUnixCommandExists(unixCommand);
         if (exists) {
           proc = spawn(unixCommand, unixArgs);
@@ -68,12 +75,7 @@ export function writeText(text: string): Promise<void> {
       proc = spawn('clip', options);
     } else {
       // Unix: check if a supported command is installed
-      const unixCommands: Array<[string, Array<string>]> = [
-        ['xclip', ['-selection', 'clipboard']],
-        ['xsel', ['--clipboard', '--input']],
-        ['wl-copy', []]
-      ];
-      for (const [unixCommand, unixArgs] of unixCommands) {
+      for (const [unixCommand, unixArgs] of UNIX_WRITE_COMMANDS) {
         const exists = await checkUnixCommandExists(unixCommand);
         if (exists) {
           proc = spawn(unixCommand, unixArgs, options);
