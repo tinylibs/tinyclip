@@ -3,8 +3,6 @@ import {spawn} from 'node:child_process';
 
 const TIMEOUT = 2000;
 
-type Command = [string, Array<string>];
-
 function checkUnixCommandExists(command: string): Promise<boolean> {
   return new Promise((resolve) => {
     const proc = spawn('which', [command]);
@@ -12,6 +10,8 @@ function checkUnixCommandExists(command: string): Promise<boolean> {
     proc.on('close', (code) => resolve(code === 0));
   });
 }
+
+type Command = [string, Array<string>];
 
 async function getReadCommand(): Promise<Command | undefined> {
   switch (process.platform) {
