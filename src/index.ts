@@ -19,9 +19,9 @@ type Command = [string, Array<string>];
 const WINDOWS_READ_COMMAND: Command = ['powershell', ['Get-Clipboard']];
 
 const UNIX_READ_COMMANDS: Array<Command> = [
-  ['xclip', ['-selection', 'clipboard', '-o']],
-  ['xsel', ['--clipboard', '--output']],
   ['wl-paste', []],
+  ['xsel', ['--clipboard', '--output']],
+  ['xclip', ['-selection', 'clipboard', '-o']],
   // wsl
   WINDOWS_READ_COMMAND
 ];
@@ -29,9 +29,9 @@ const UNIX_READ_COMMANDS: Array<Command> = [
 const WINDOWS_WRITE_COMMAND: Command = ['clip', []];
 
 const UNIX_WRITE_COMMANDS: Array<Command> = [
-  ['xclip', ['-selection', 'clipboard']],
-  ['xsel', ['--clipboard', '--input']],
   ['wl-copy', []],
+  ['xsel', ['--clipboard', '--input']],
+  ['xclip', ['-selection', 'clipboard', '-i']],
   // wsl
   WINDOWS_WRITE_COMMAND
 ];
