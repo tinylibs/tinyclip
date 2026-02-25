@@ -11,15 +11,11 @@ npm install tinyclip
 ## Usage
 
 ```js
-import { readText, writeText, readTextSync, writeTextSync } from 'tinyclip'
+import {readText, writeText} from 'tinyclip';
 
 // Async
-await writeText('hello world')
-const text = await readText()
-
-// Sync (Node.js only)
-writeTextSync('hello world')
-const text = readTextSync()
+await writeText('hello world');
+const text = await readText();
 ```
 
 ## API
@@ -31,20 +27,6 @@ Reads text from the clipboard.
 ### `writeText(text: string): Promise<void>`
 
 Writes text to the clipboard.
-
-### `readTextSync(): string`
-
-Reads text from the clipboard synchronously.
-
-> [!NOTE]
-> Not available in browsers.
-
-### `writeTextSync(text: string): void`
-
-Writes text to the clipboard synchronously.
-
-> [!NOTE]
-> Not available in browsers.
 
 ## License
 

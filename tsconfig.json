@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "outDir": "./lib",
     "module": "node18",
     "target": "esnext",
     "types": [],
@@ -17,7 +16,12 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "isolatedDeclarations": true
   },
-  "include": ["src"]
+  "files": [],
+  "references": [
+    {"path": "./tsconfig.src.json"},
+    {"path": "./tsconfig.tests.json"}
+  ]
 }
