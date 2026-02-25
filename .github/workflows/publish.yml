@@ -42,6 +42,7 @@ jobs:
           node-version: 22.x
           cache: 'pnpm'
       - run: pnpm install
+      - run: pnpm i -g npm@latest
       - run: pnpm build
       - run: pnpm version ${TAG_NAME} --git-tag-version=false
         env:
