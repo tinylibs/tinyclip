@@ -30,6 +30,10 @@ interface ProcessSpawner {
   ) => SpawnProcess;
 }
 
+interface CommandProvider {
+  get: () => Promise<Command | undefined>;
+}
+
 export class NodeProcessSpawner implements ProcessSpawner {
   spawn(
     commmand: string,
@@ -37,6 +41,87 @@ export class NodeProcessSpawner implements ProcessSpawner {
     options: ProcessSpawnerOptions
   ): SpawnProcess {
     return spawn(commmand, args, options);
+  }
+}
+
+export class NodeReadCommandProvider implements CommandProvider {
+  #processSpawner: ProcessSpawner;
+
+  constructor(processSpawner: ProcessSpawner) {
+    this.#processSpawner = processSpawner;
+  }
+
+  async get(): Promise<Command | undefined> {
+    switch (process.platform) {
+      case 'darwin':
+        return ['pbpaste', []];
+      case 'win32':
+        return ['powershell', ['Get-Clipboard']];
+      case 'linux':
+      case 'freebsd':
+      case 'openbsd':
+        if (process.env.WAYLAND_DISPLAY) {
+          return ['wl-paste', []];
+        }
+        if (process.env.WSL_DISTRO_NAME) {
+          return [
+            'powershell.exe',
+            ['-noprofile', '-command', 'Get-Clipboard']
+          ];
+        }
+        if (
+          await checkUnixCommandExists({
+            command: 'xsel',
+            processSpawner: this.#processSpawner
+          })
+        ) {
+          return ['xsel', ['--clipboard', '--output']];
+        }
+        return ['xclip', ['-selection', 'clipboard', '-o']];
+      case 'android':
+        return ['termux-clipboard-get', []];
+      default:
+        return undefined;
+    }
+  }
+}
+
+export class NodeWriteCommandProvider implements CommandProvider {
+  #processSpawner: ProcessSpawner;
+
+  constructor(processSpawner: ProcessSpawner) {
+    this.#processSpawner = processSpawner;
+  }
+
+  async get(): Promise<Command | undefined> {
+    switch (process.platform) {
+      case 'darwin':
+        return ['pbcopy', []];
+      case 'win32':
+        return ['clip', []];
+      case 'linux':
+      case 'freebsd':
+      case 'openbsd':
+        if (process.env.WSL_DISTRO_NAME) {
+          return ['clip.exe', []];
+        }
+        if (process.env.WAYLAND_DISPLAY) {
+          return ['wl-copy', []];
+        }
+        if (
+          await checkUnixCommandExists({
+            command: 'xsel',
+            processSpawner: this.#processSpawner
+          })
+        ) {
+          return ['xsel', ['--clipboard', '--input']];
+        }
+        return ['xclip', ['-selection', 'clipboard', '-i']];
+      case 'android':
+        return ['termux-clipboard-set', []];
+      default:
+        return undefined;
+    }
   }
 }
 
@@ -58,48 +143,22 @@ function checkUnixCommandExists({
 
 type Command = [string, Array<string>];
 
-const WINDOWS_READ_COMMAND: Command = ['powershell', ['Get-Clipboard']];
-
-const UNIX_READ_COMMANDS: Array<Command> = [
-  ['wl-paste', []],
-  ['xsel', ['--clipboard', '--output']],
-  ['xclip', ['-selection', 'clipboard', '-o']],
-  // wsl
-  WINDOWS_READ_COMMAND
-];
-
 export function readTextInternal({
   processSpawner,
-  platform
+  commandProvider
 }: {
   processSpawner: ProcessSpawner;
-  platform: NodeJS.Platform;
+  commandProvider: CommandProvider;
 }): Promise<string> {
   return new Promise(async (resolve, reject) => {
-    let proc;
-    const options: ProcessSpawnerOptions = {
-      signal: AbortSignal.timeout(TIMEOUT)
-    };
-
-    if (platform === 'darwin') {
-      proc = processSpawner.spawn('pbpaste', [], options);
-    } else if (platform === 'win32') {
-      proc = processSpawner.spawn(...WINDOWS_READ_COMMAND, options);
-    } else {
-      // Unix: check if a supported command is installed
-      for (const [command, args] of UNIX_READ_COMMANDS) {
-        const exists = await checkUnixCommandExists({
-          command,
-          processSpawner
-        });
-        if (exists) {
-          proc = processSpawner.spawn(command, args, options);
-          break;
-        }
-      }
+    const command = await commandProvider.get();
+    if (!command) {
+      return reject(new Error('No clipboard tool found'));
     }
 
-    if (!proc) return reject(new Error('No clipboard tool found'));
+    const proc = processSpawner.spawn(...command, {
+      signal: AbortSignal.timeout(TIMEOUT)
+    });
 
     let data = '';
     proc.stdout?.on('data', (chunk) => (data += chunk));
@@ -118,48 +177,25 @@ export function readTextInternal({
   });
 }
 
-const WINDOWS_WRITE_COMMAND: Command = ['clip', []];
-
-const UNIX_WRITE_COMMANDS: Array<Command> = [
-  ['wl-copy', []],
-  ['xsel', ['--clipboard', '--input']],
-  ['xclip', ['-selection', 'clipboard', '-i']],
-  // wsl
-  WINDOWS_WRITE_COMMAND
-];
-
 export function writeTextInternal({
   text,
   processSpawner,
-  platform
+  commandProvider
 }: {
   text: string;
   processSpawner: ProcessSpawner;
-  platform: NodeJS.Platform;
+  commandProvider: CommandProvider;
 }): Promise<void> {
   return new Promise(async (resolve, reject) => {
-    let proc;
-    const options: ProcessSpawnerOptions = {
-      stdio: ['pipe', 'ignore', 'ignore'],
-      signal: AbortSignal.timeout(TIMEOUT)
-    };
-
-    if (platform === 'darwin') {
-      proc = processSpawner.spawn('pbcopy', [], options);
-    } else if (platform === 'win32') {
-      proc = processSpawner.spawn(...WINDOWS_WRITE_COMMAND, options);
-    } else {
-      // Unix: check if a supported command is installed
-      for (const [command, args] of UNIX_WRITE_COMMANDS) {
-        const exists = await checkUnixCommandExists({command, processSpawner});
-        if (exists) {
-          proc = processSpawner.spawn(command, args, options);
-          break;
-        }
-      }
+    const command = await commandProvider.get();
+    if (!command) {
+      return reject(new Error('No clipboard tool found'));
     }
 
-    if (!proc) return reject(new Error('No clipboard tool found'));
+    const proc = processSpawner.spawn(...command, {
+      stdio: ['pipe', 'ignore', 'ignore'],
+      signal: AbortSignal.timeout(TIMEOUT)
+    });
 
     proc.on('error', (cause) =>
       reject(new Error('An error occurred while copying', {cause}))
