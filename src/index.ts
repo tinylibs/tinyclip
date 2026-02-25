@@ -14,16 +14,26 @@ function checkUnixCommandExists(command: string): Promise<boolean> {
   });
 }
 
-const UNIX_READ_COMMANDS: Array<[string, Array<string>]> = [
+type Command = [string, Array<string>];
+
+const WINDOWS_READ_COMMAND: Command = ['powershell', ['Get-Clipboard']];
+
+const UNIX_READ_COMMANDS: Array<Command> = [
   ['xclip', ['-selection', 'clipboard', '-o']],
   ['xsel', ['--clipboard', '--output']],
-  ['wl-paste', []]
+  ['wl-paste', []],
+  // wsl
+  WINDOWS_READ_COMMAND
 ];
 
-const UNIX_WRITE_COMMANDS: Array<[string, Array<string>]> = [
+const WINDOWS_WRITE_COMMAND: Command = ['clip', []];
+
+const UNIX_WRITE_COMMANDS: Array<Command> = [
   ['xclip', ['-selection', 'clipboard']],
   ['xsel', ['--clipboard', '--input']],
-  ['wl-copy', []]
+  ['wl-copy', []],
+  // wsl
+  WINDOWS_WRITE_COMMAND
 ];
 
 export function readText(): Promise<string> {
@@ -32,7 +42,7 @@ export function readText(): Promise<string> {
     if (process.platform === 'darwin') {
       proc = spawn('pbpaste');
     } else if (process.platform === 'win32') {
-      proc = spawn('powershell', ['Get-Clipboard']);
+      proc = spawn(...WINDOWS_READ_COMMAND);
     } else {
       // Unix: check if a supported command is installed
       for (const [unixCommand, unixArgs] of UNIX_READ_COMMANDS) {
@@ -72,7 +82,7 @@ export function writeText(text: string): Promise<void> {
     if (process.platform === 'darwin') {
       proc = spawn('pbcopy', options);
     } else if (process.platform === 'win32') {
-      proc = spawn('clip', options);
+      proc = spawn(...WINDOWS_WRITE_COMMAND, options);
     } else {
       // Unix: check if a supported command is installed
       for (const [unixCommand, unixArgs] of UNIX_WRITE_COMMANDS) {
