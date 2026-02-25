@@ -9,8 +9,7 @@
     "paste"
   ],
   "files": [
-    "dist",
-    "README.md"
+    "dist"
   ],
   "homepage": "https://github.com/tinylibs/tinyclip#readme",
   "bugs": {
