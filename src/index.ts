@@ -22,7 +22,7 @@ function getReadCommand(): Command | undefined {
       }
       return ['xclip', ['-selection', 'clipboard', '-o']];
     case 'android':
-      return ['get', []];
+      return ['termux-clipboard-get', []];
     default:
       return undefined;
   }
