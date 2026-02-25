@@ -33,12 +33,22 @@ jobs:
             os: ubuntu-latest
             install-cmd: sudo apt-get update && sudo apt-get install -y xclip xvfb
             test-cmd: xvfb-run -a pnpm test
+          # Test xsel on Ubuntu with Node 22
+          - node-version: 22.x
+            os: ubuntu-latest
+            install-cmd: sudo apt-get update && sudo apt-get install -y xsel xvfb
+            test-cmd: xvfb-run -a pnpm test
           # Test xclip on Ubuntu with Node 24
           - node-version: 24.x
             os: ubuntu-latest
             install-cmd: sudo apt-get update && sudo apt-get install -y xclip xvfb
             test-cmd: xvfb-run -a pnpm test
-          # We do not test Wayland nor WSL support as setting this up in CI is tricky
+          # Test xsel on Ubuntu with Node 24
+          - node-version: 24.x
+            os: ubuntu-latest
+            install-cmd: sudo apt-get update && sudo apt-get install -y xsel xvfb
+            test-cmd: xvfb-run -a pnpm test
+          # We do not test wl-copy/wl-paste as setting up wayland in CI is tricky
           # We only test Node 24 on macOS and Windows to reduce CI usage
           - node-version: 24.x
             os: macos-14
