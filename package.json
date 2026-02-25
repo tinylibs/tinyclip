@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
-    "@typescript/native-preview": "^7.0.0-dev.20251217.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260225.1",
     "@vitest/coverage-v8": "^4.0.18",
     "prettier": "^3.7.4",
     "vitest": "^4.0.18"
