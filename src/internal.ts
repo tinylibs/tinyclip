@@ -69,9 +69,11 @@ const UNIX_READ_COMMANDS: Array<Command> = [
 ];
 
 export function readTextInternal({
-  processSpawner
+  processSpawner,
+  platform
 }: {
   processSpawner: ProcessSpawner;
+  platform: NodeJS.Platform;
 }): Promise<string> {
   return new Promise(async (resolve, reject) => {
     let proc;
@@ -79,9 +81,9 @@ export function readTextInternal({
       signal: AbortSignal.timeout(TIMEOUT)
     };
 
-    if (process.platform === 'darwin') {
+    if (platform === 'darwin') {
       proc = processSpawner.spawn('pbpaste', [], options);
-    } else if (process.platform === 'win32') {
+    } else if (platform === 'win32') {
       proc = processSpawner.spawn(...WINDOWS_READ_COMMAND, options);
     } else {
       // Unix: check if a supported command is installed
@@ -128,10 +130,12 @@ const UNIX_WRITE_COMMANDS: Array<Command> = [
 
 export function writeTextInternal({
   text,
-  processSpawner
+  processSpawner,
+  platform
 }: {
   text: string;
   processSpawner: ProcessSpawner;
+  platform: NodeJS.Platform;
 }): Promise<void> {
   return new Promise(async (resolve, reject) => {
     let proc;
@@ -140,9 +144,9 @@ export function writeTextInternal({
       signal: AbortSignal.timeout(TIMEOUT)
     };
 
-    if (process.platform === 'darwin') {
+    if (platform === 'darwin') {
       proc = processSpawner.spawn('pbcopy', [], options);
-    } else if (process.platform === 'win32') {
+    } else if (platform === 'win32') {
       proc = processSpawner.spawn(...WINDOWS_WRITE_COMMAND, options);
     } else {
       // Unix: check if a supported command is installed

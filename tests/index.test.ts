@@ -1,5 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import * as clipboard from '../src/index.js';
+import {readTextInternal, writeTextInternal} from '../src/internal.js';
 
 describe('clipboard', () => {
   it('should export correct API', () => {
@@ -11,5 +12,148 @@ describe('clipboard', () => {
     const text = Math.random().toString();
     await clipboard.writeText(text);
     expect(await clipboard.readText()).toEqual(text);
+  });
+
+  describe('errors', () => {
+    describe('writeTextInternal()', () => {
+      it('throws an error if no tool can be found', async () => {
+        await expect(
+          writeTextInternal({
+            text: 'foo',
+            platform: 'linux',
+            processSpawner: {
+              spawn: () => {
+                return {
+                  stdin: null,
+                  stdout: null,
+                  on: (eventName, cb) => {
+                    if (eventName === 'close') {
+                      // @ts-expect-error weird types
+                      cb(1);
+                    }
+                  }
+                };
+              }
+            }
+          })
+        ).rejects.toThrowError('No clipboard tool found');
+      });
+
+      it('throws an error if copying goes wrong', async () => {
+        await expect(
+          writeTextInternal({
+            text: 'foo',
+            platform: 'darwin',
+            processSpawner: {
+              spawn: () => {
+                return {
+                  stdin: null,
+                  stdout: null,
+                  on: (eventName, cb) => {
+                    if (eventName === 'error') {
+                      // @ts-expect-error weird types
+                      cb(new Error('test'));
+                    }
+                  }
+                };
+              }
+            }
+          })
+        ).rejects.toThrowError('An error occurred while copying');
+      });
+
+      it('throws an error if it does not close properly', async () => {
+        await expect(
+          writeTextInternal({
+            text: 'foo',
+            platform: 'darwin',
+            processSpawner: {
+              spawn: () => {
+                return {
+                  stdin: null,
+                  stdout: null,
+                  on: (eventName, cb) => {
+                    if (eventName === 'close') {
+                      // @ts-expect-error weird types
+                      cb(1);
+                    }
+                  }
+                };
+              }
+            }
+          })
+        ).rejects.toThrowError('An unknown error occurred while copying');
+      });
+    });
+  });
+
+  describe('readTextInternal()', () => {
+    it('throws an error if no tool can be found', async () => {
+      await expect(
+        readTextInternal({
+          platform: 'linux',
+          processSpawner: {
+            spawn: () => {
+              return {
+                stdin: null,
+                stdout: null,
+                on: (eventName, cb) => {
+                  if (eventName === 'close') {
+                    // @ts-expect-error weird types
+                    cb(1);
+                  }
+                }
+              };
+            }
+          }
+        })
+      ).rejects.toThrowError('No clipboard tool found');
+    });
+
+    it('throws an error if copying goes wrong', async () => {
+      await expect(
+        readTextInternal({
+          platform: 'darwin',
+          processSpawner: {
+            spawn: () => {
+              return {
+                stdin: null,
+                stdout: null,
+                on: (eventName, cb) => {
+                  if (eventName === 'error') {
+                    // @ts-expect-error weird types
+                    cb(new Error('test'));
+                  }
+                }
+              };
+            }
+          }
+        })
+      ).rejects.toThrowError('An error occurred while reading from clipboard');
+    });
+
+    it('throws an error if it does not close properly', async () => {
+      await expect(
+        readTextInternal({
+          platform: 'darwin',
+          processSpawner: {
+            spawn: () => {
+              return {
+                stdin: null,
+                stdout: null,
+                on: (eventName, cb) => {
+                  if (eventName === 'close') {
+                    // @ts-expect-error weird types
+                    cb(1);
+                  }
+                }
+              };
+            }
+          }
+        })
+      ).rejects.toThrowError(
+        'An unknown error occurred while reading from clipboard'
+      );
+    });
   });
 });

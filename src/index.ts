@@ -10,12 +10,12 @@ const processSpawner = new NodeProcessSpawner();
  * Reads text from the clipboard.
  */
 export function readText(): Promise<string> {
-  return readTextInternal({processSpawner});
+  return readTextInternal({processSpawner, platform: process.platform});
 }
 
 /**
  * Writes text to the clipboard.
  */
 export function writeText(text: string): Promise<void> {
-  return writeTextInternal({text, processSpawner});
+  return writeTextInternal({text, processSpawner, platform: process.platform});
 }
