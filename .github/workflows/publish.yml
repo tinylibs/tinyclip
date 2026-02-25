@@ -25,6 +25,8 @@ jobs:
         run: pnpm build
       - name: Lint
         run: pnpm lint
+      - name: Download Playwright binaries
+        run: pnpm exec playwright install
       - name: Test
         run: xvfb-run -a pnpm test
 

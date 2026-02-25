@@ -66,6 +66,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
+      - name: Download Playwright binaries
+        run: pnpm exec playwright install
       - name: Install Clipboard Tool
         if: matrix.install-cmd
         run: ${{ matrix.install-cmd }}
