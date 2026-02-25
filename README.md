@@ -13,7 +13,6 @@ npm install tinyclip
 ```js
 import {readText, writeText} from 'tinyclip';
 
-// Async
 await writeText('hello world');
 const text = await readText();
 ```
