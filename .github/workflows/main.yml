@@ -71,6 +71,8 @@ jobs:
         run: ${{ matrix.install-cmd }}
       - name: Install Dependencies
         run: pnpm install
+      - name: Download Playwright binaries
+        run: pnpm exec playwright install chromium
       - name: Build
         run: pnpm build
       - name: Test
