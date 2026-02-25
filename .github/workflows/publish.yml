@@ -20,7 +20,7 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
       - name: Install Clipboard Tool
-        run: sudo apt-get update && sudo apt-get install -y xsel xvfb
+        run: sudo apt-get update && sudo apt-get install -y xclip xvfb
       - name: Build
         run: pnpm build
       - name: Lint
