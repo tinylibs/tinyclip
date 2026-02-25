@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import {spawn} from 'node:child_process';
 
-export interface SpawnProcess {
+interface SpawnProcess {
   on: <T extends 'error' | 'close'>(
     eventName: T,
     cb: (
@@ -17,12 +17,12 @@ export interface SpawnProcess {
   } | null;
 }
 
-export interface ProcessSpawnerOptions {
+interface ProcessSpawnerOptions {
   signal?: AbortSignal;
   stdio?: ['pipe', 'ignore', 'ignore'];
 }
 
-export interface ProcessSpawner {
+interface ProcessSpawner {
   spawn: (
     commmand: string,
     args: Array<string>,
