@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import {spawn} from 'node:child_process';
 
 const TIMEOUT = 2000;
