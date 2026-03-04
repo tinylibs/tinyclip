@@ -22,11 +22,11 @@ async function getReadCommand(): Promise<Command | undefined> {
     case 'linux':
     case 'freebsd':
     case 'openbsd':
-      if (process.env.WAYLAND_DISPLAY) {
-        return ['wl-paste', []];
-      }
       if (process.env.WSL_DISTRO_NAME) {
         return ['powershell.exe', ['-noprofile', '-command', 'Get-Clipboard']];
+      }
+      if (process.env.WAYLAND_DISPLAY) {
+        return ['wl-paste', []];
       }
       if (await checkUnixCommandExists('xsel')) {
         return ['xsel', ['--clipboard', '--output']];
