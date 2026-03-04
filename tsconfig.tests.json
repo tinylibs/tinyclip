@@ -3,7 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "noEmit": true,
-    "tsBuildInfoFile": "node_modules/.tmp/tsconfig.tests.tsbuildinfo"
+    "tsBuildInfoFile": "node_modules/.tmp/tsconfig.tests.tsbuildinfo",
+    "types": ["node"]
   },
   "include": ["tests"],
   "references": [{"path": "./tsconfig.src.json"}]
