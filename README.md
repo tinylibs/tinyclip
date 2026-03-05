@@ -2,7 +2,8 @@
 
 A tiny cross-platform clipboard library. Uses native OS clipboard functionality on Node.js.
 
-> On the browser, use the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) directly!
+> [!NOTE]
+> In the browser, you can use the native [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) instead of a dependency.
 
 ## Install
 
