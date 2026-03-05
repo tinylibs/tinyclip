@@ -23,6 +23,11 @@
   "author": "Tinylibs Maintainers (https://github.com/tinylibs)",
   "type": "module",
   "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsgo --build",
     "test": "vitest run",
