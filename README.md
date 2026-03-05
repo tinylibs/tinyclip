@@ -1,6 +1,8 @@
 # tinyclip 📋
 
-A tiny cross-platform clipboard library. Uses native OS clipboard functionality on Node.js, and the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) in browsers.
+A tiny cross-platform clipboard library. Uses native OS clipboard functionality on Node.js.
+
+> On the browser, use the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) directly!
 
 ## Install
 
