@@ -28,6 +28,9 @@
       "default": "./dist/index.js"
     }
   },
+  "engines": {
+    "node": "^16.14.0 || >= 17.3.0"
+  },
   "scripts": {
     "build": "tsgo --build",
     "test": "vitest run",
