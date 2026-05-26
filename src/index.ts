@@ -12,14 +12,15 @@ function checkUnixCommandExists(command: string): Promise<boolean> {
 
 type Command = [string, Array<string>];
 
-const WINDOWS_READ_COMMAND: Command = [
-  'powershell',
-  [
-    '-NoProfile',
-    '-Command',
-    '[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); Get-Clipboard'
-  ]
-];
+// const WINDOWS_READ_COMMAND: Command = [
+//   'powershell',
+//   [
+//     '-NoProfile',
+//     '-Command',
+//     '[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); Get-Clipboard'
+//   ]
+// ];
+const WINDOWS_READ_COMMAND: Command = ['powershell', ['Get-Clipboard']];
 
 async function getReadCommand(): Promise<Command | undefined> {
   switch (process.platform) {
@@ -78,14 +79,15 @@ export function readText(): Promise<string> {
   });
 }
 
-const WINDOWS_WRITE_COMMAND: Command = [
-  'powershell',
-  [
-    '-NoProfile',
-    '-Command',
-    '[Console]::InputEncoding = [Text.UTF8Encoding]::new($false); [Console]::In.ReadToEnd() | Set-Clipboard'
-  ]
-];
+// const WINDOWS_WRITE_COMMAND: Command = [
+//   'powershell',
+//   [
+//     '-NoProfile',
+//     '-Command',
+//     '[Console]::InputEncoding = [Text.UTF8Encoding]::new($false); [Console]::In.ReadToEnd() | Set-Clipboard'
+//   ]
+// ];
+const WINDOWS_WRITE_COMMAND: Command = ['clip.exe', []];
 
 async function getWriteCommand(): Promise<Command | undefined> {
   switch (process.platform) {
