@@ -14,7 +14,7 @@ describe('clipboard', () => {
   });
 
   it('should copy then read successfully', async () => {
-    const text = Math.random().toString();
+    const text = '❤️' + Math.random().toString();
     await clipboard.writeText(text);
     expect(await clipboard.readText()).toEqual(text);
   });
