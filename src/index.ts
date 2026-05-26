@@ -12,17 +12,26 @@ function checkUnixCommandExists(command: string): Promise<boolean> {
 
 type Command = [string, Array<string>];
 
+const WINDOWS_READ_COMMAND: Command = [
+  'powershell',
+  [
+    '-NoProfile',
+    '-Command',
+    '[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false); Get-Clipboard'
+  ]
+];
+
 async function getReadCommand(): Promise<Command | undefined> {
   switch (process.platform) {
     case 'darwin':
       return ['pbpaste', []];
     case 'win32':
-      return ['powershell', ['Get-Clipboard']];
+      return WINDOWS_READ_COMMAND;
     case 'linux':
     case 'freebsd':
     case 'openbsd':
       if (process.env.WSL_DISTRO_NAME) {
-        return ['powershell.exe', ['-noprofile', '-command', 'Get-Clipboard']];
+        return WINDOWS_READ_COMMAND;
       }
       if (process.env.WAYLAND_DISPLAY) {
         return ['wl-paste', []];
@@ -69,17 +78,26 @@ export function readText(): Promise<string> {
   });
 }
 
+const WINDOWS_WRITE_COMMAND: Command = [
+  'powershell',
+  [
+    '-NoProfile',
+    '-Command',
+    '[Console]::InputEncoding = [Text.UTF8Encoding]::new($false); [Console]::In.ReadToEnd() | Set-Clipboard'
+  ]
+];
+
 async function getWriteCommand(): Promise<Command | undefined> {
   switch (process.platform) {
     case 'darwin':
       return ['pbcopy', []];
     case 'win32':
-      return ['clip', []];
+      return WINDOWS_WRITE_COMMAND;
     case 'linux':
     case 'freebsd':
     case 'openbsd':
       if (process.env.WSL_DISTRO_NAME) {
-        return ['clip.exe', []];
+        return WINDOWS_WRITE_COMMAND;
       }
       if (process.env.WAYLAND_DISPLAY) {
         return ['wl-copy', []];
