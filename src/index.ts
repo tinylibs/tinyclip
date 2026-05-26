@@ -1,6 +1,6 @@
 import {spawn} from 'node:child_process';
 
-const TIMEOUT = 2000;
+const TIMEOUT = 3000;
 
 function checkUnixCommandExists(command: string): Promise<boolean> {
   return new Promise((resolve) => {
