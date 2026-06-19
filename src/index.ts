@@ -12,6 +12,25 @@ function checkUnixCommandExists(command: string): Promise<boolean> {
 
 type Command = [string, Array<string>];
 
+/**
+ * Builds an Error describing a clipboard tool that exited with a non-zero code,
+ * surfacing the command, exit code and any stderr output as the failure cause.
+ */
+function describeFailure(
+  command: Command,
+  code: number | null,
+  stderr: string
+): Error {
+  const trimmed = stderr.trim();
+  const details = [
+    `command \`${command[0]}\` exited with code ${code ?? 'unknown'}`,
+    trimmed && `stderr: ${trimmed}`
+  ]
+    .filter(Boolean)
+    .join('; ');
+  return new Error(details);
+}
+
 const WINDOWS_READ_COMMAND: Command = [
   'powershell',
   [
@@ -61,8 +80,10 @@ export function readText(): Promise<string> {
       signal: AbortSignal.timeout(TIMEOUT)
     });
 
-    let data = '';
-    proc.stdout.on('data', (chunk) => (data += chunk));
+    let stdout = '';
+    let stderr = '';
+    proc.stdout.on('data', (chunk) => (stdout += chunk));
+    proc.stderr.on('data', (chunk) => (stderr += chunk));
     proc.on('error', (cause) =>
       reject(
         new Error('An error occurred while reading from clipboard', {cause})
@@ -70,9 +91,14 @@ export function readText(): Promise<string> {
     );
     proc.on('close', (code) =>
       code === 0
-        ? resolve(data.trim())
+        ? resolve(stdout.trim())
         : reject(
-            new Error('An unknown error occurred while reading from clipboard')
+            new Error(
+              'An unknown error occurred while reading from clipboard',
+              {
+                cause: describeFailure(command, code, stderr)
+              }
+            )
           )
     );
   });
@@ -124,17 +150,25 @@ export function writeText(text: string): Promise<void> {
     }
 
     const proc = spawn(...command, {
-      stdio: ['pipe', 'ignore', 'ignore'],
+      stdio: ['pipe', 'ignore', 'pipe'],
       signal: AbortSignal.timeout(TIMEOUT)
     });
 
+    let stderr = '';
+    proc.stderr.on('data', (chunk) => (stderr += chunk));
     proc.on('error', (cause) =>
       reject(new Error('An error occurred while copying', {cause}))
     );
-    proc.on('close', (code) =>
+    // Use 'exit' rather than 'close': some tools (e.g. xclip) daemonize a child
+    // that keeps the stderr pipe open, so 'close' would never fire.
+    proc.on('exit', (code) =>
       code === 0
         ? resolve()
-        : reject(new Error('An unknown error occurred while copying'))
+        : reject(
+            new Error('An unknown error occurred while copying', {
+              cause: describeFailure(command, code, stderr)
+            })
+          )
     );
 
     proc.stdin.write(text);

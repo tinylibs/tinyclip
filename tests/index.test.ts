@@ -25,11 +25,21 @@ describe('clipboard', () => {
     });
 
     function fakeProcess(
-      on: (eventName: 'error' | 'close', cb: (input: any) => void) => void
+      on: (
+        eventName: 'error' | 'close' | 'exit',
+        cb: (input: any) => void
+      ) => void,
+      stderrData?: string
     ) {
       return {
         stdin: {write: vi.fn(), end: vi.fn()},
         stdout: {on: vi.fn()},
+        stderr: {
+          on: vi.fn((eventName: string, cb: (chunk: unknown) => void) => {
+            if (eventName === 'data' && stderrData !== undefined)
+              cb(stderrData);
+          })
+        },
         on
       } as any;
     }
@@ -60,13 +70,28 @@ describe('clipboard', () => {
         vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
         vi.mocked(spawn).mockImplementationOnce(() =>
           fakeProcess((eventName, cb) => {
-            if (eventName === 'close') cb(1);
+            if (eventName === 'exit') cb(1);
           })
         );
 
         await expect(clipboard.writeText('foo')).rejects.toThrowError(
           'An unknown error occurred while copying'
         );
+      });
+
+      it('surfaces the command, exit code and stderr as the cause', async () => {
+        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+        vi.mocked(spawn).mockImplementationOnce(() =>
+          fakeProcess((eventName, cb) => {
+            if (eventName === 'exit') cb(2);
+          }, 'pbcopy: boom')
+        );
+
+        const error = await clipboard.writeText('foo').catch((e) => e);
+        expect(error.cause).toBeInstanceOf(Error);
+        expect(error.cause.message).toContain('`pbcopy`');
+        expect(error.cause.message).toContain('exited with code 2');
+        expect(error.cause.message).toContain('stderr: pbcopy: boom');
       });
     });
 
@@ -103,6 +128,21 @@ describe('clipboard', () => {
         await expect(clipboard.readText()).rejects.toThrowError(
           'An unknown error occurred while reading from clipboard'
         );
+      });
+
+      it('surfaces the command, exit code and stderr as the cause', async () => {
+        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+        vi.mocked(spawn).mockImplementationOnce(() =>
+          fakeProcess((eventName, cb) => {
+            if (eventName === 'close') cb(2);
+          }, 'pbpaste: boom')
+        );
+
+        const error = await clipboard.readText().catch((e) => e);
+        expect(error.cause).toBeInstanceOf(Error);
+        expect(error.cause.message).toContain('`pbpaste`');
+        expect(error.cause.message).toContain('exited with code 2');
+        expect(error.cause.message).toContain('stderr: pbpaste: boom');
       });
     });
   });
