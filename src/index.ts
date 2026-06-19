@@ -161,15 +161,18 @@ export function writeText(text: string): Promise<void> {
     );
     // Use 'exit' rather than 'close': some tools (e.g. xclip) daemonize a child
     // that keeps the stderr pipe open, so 'close' would never fire.
-    proc.on('exit', (code) =>
+    proc.on('exit', (code) => {
+      // The daemonized child inherits the stderr pipe, keeping it (and the event
+      // loop) open after the parent exits. Destroy it so callers can exit cleanly.
+      proc.stderr?.destroy();
       code === 0
         ? resolve()
         : reject(
             new Error('An unknown error occurred while copying', {
               cause: describeFailure(command, code, stderr)
             })
-          )
-    );
+          );
+    });
 
     proc.stdin.write(text);
     proc.stdin.end();

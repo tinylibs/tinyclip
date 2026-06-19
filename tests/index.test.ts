@@ -38,7 +38,8 @@ describe('clipboard', () => {
           on: vi.fn((eventName: string, cb: (chunk: unknown) => void) => {
             if (eventName === 'data' && stderrData !== undefined)
               cb(stderrData);
-          })
+          }),
+          destroy: () => {}
         },
         on
       } as any;
