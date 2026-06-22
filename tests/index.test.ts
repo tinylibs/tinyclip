@@ -19,6 +19,11 @@ describe('clipboard', () => {
     expect(await clipboard.readText()).toEqual(text);
   });
 
+  it('should write an empty string without throwing', async () => {
+    await expect(clipboard.writeText('')).resolves.toBeUndefined();
+    expect(await clipboard.readText()).toEqual('');
+  });
+
   describe('errors', () => {
     afterEach(() => {
       vi.restoreAllMocks();

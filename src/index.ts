@@ -109,7 +109,9 @@ const WINDOWS_WRITE_COMMAND: Command = [
   [
     '-NoProfile',
     '-Command',
-    '[Console]::InputEncoding = [Text.UTF8Encoding]::new($false); [Console]::In.ReadToEnd() | Set-Clipboard'
+    // `Set-Clipboard` rejects empty input, so clear the clipboard instead
+    // when there is nothing to write (e.g. `writeText('')`).
+    '[Console]::InputEncoding = [Text.UTF8Encoding]::new($false); $text = [Console]::In.ReadToEnd(); if ($text.Length -gt 0) { $text | Set-Clipboard } else { Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::Clear() }'
   ]
 ];
 
