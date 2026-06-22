@@ -16,7 +16,7 @@ type Command = [string, Array<string>];
  * Builds an Error describing a clipboard tool that exited with a non-zero code,
  * surfacing the command, exit code and any stderr output as the failure cause.
  */
-function describeFailure(
+function createUnknownError(
   command: Command,
   code: number | null,
   stderr: string
@@ -27,7 +27,7 @@ function describeFailure(
     trimmed && `stderr: ${trimmed}`
   ]
     .filter(Boolean)
-    .join('; ');
+    .join('. ');
   return new Error(details);
 }
 
@@ -92,14 +92,7 @@ export function readText(): Promise<string> {
     proc.on('close', (code) =>
       code === 0
         ? resolve(stdout.trim())
-        : reject(
-            new Error(
-              'An unknown error occurred while reading from clipboard',
-              {
-                cause: describeFailure(command, code, stderr)
-              }
-            )
-          )
+        : reject(createUnknownError(command, code, stderr))
     );
   });
 }
@@ -169,11 +162,7 @@ export function writeText(text: string): Promise<void> {
       proc.stderr?.destroy();
       code === 0
         ? resolve()
-        : reject(
-            new Error('An unknown error occurred while copying', {
-              cause: describeFailure(command, code, stderr)
-            })
-          );
+        : reject(createUnknownError(command, code, stderr));
     });
 
     proc.stdin.write(text);

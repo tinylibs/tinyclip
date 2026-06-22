@@ -54,7 +54,7 @@ describe('clipboard', () => {
       it('throws an error if no tool can be found', async () => {
         vi.spyOn(process, 'platform', 'get').mockReturnValue('aix');
 
-        await expect(clipboard.writeText('foo')).rejects.toThrowError(
+        await expect(clipboard.writeText('foo')).rejects.toThrow(
           'No clipboard tool found'
         );
       });
@@ -67,7 +67,7 @@ describe('clipboard', () => {
           })
         );
 
-        await expect(clipboard.writeText('foo')).rejects.toThrowError(
+        await expect(clipboard.writeText('foo')).rejects.toThrow(
           'An error occurred while copying'
         );
       });
@@ -80,8 +80,8 @@ describe('clipboard', () => {
           })
         );
 
-        await expect(clipboard.writeText('foo')).rejects.toThrowError(
-          'An unknown error occurred while copying'
+        await expect(clipboard.writeText('foo')).rejects.toThrow(
+          'command `pbcopy` exited with code 1'
         );
       });
 
@@ -94,10 +94,9 @@ describe('clipboard', () => {
         );
 
         const error = await clipboard.writeText('foo').catch((e) => e);
-        expect(error.cause).toBeInstanceOf(Error);
-        expect(error.cause.message).toContain('`pbcopy`');
-        expect(error.cause.message).toContain('exited with code 2');
-        expect(error.cause.message).toContain('stderr: pbcopy: boom');
+        expect(error.message).toContain('`pbcopy`');
+        expect(error.message).toContain('exited with code 2');
+        expect(error.message).toContain('stderr: pbcopy: boom');
       });
     });
 
@@ -105,7 +104,7 @@ describe('clipboard', () => {
       it('throws an error if no tool can be found', async () => {
         vi.spyOn(process, 'platform', 'get').mockReturnValue('aix');
 
-        await expect(clipboard.readText()).rejects.toThrowError(
+        await expect(clipboard.readText()).rejects.toThrow(
           'No clipboard tool found'
         );
       });
@@ -118,7 +117,7 @@ describe('clipboard', () => {
           })
         );
 
-        await expect(clipboard.readText()).rejects.toThrowError(
+        await expect(clipboard.readText()).rejects.toThrow(
           'An error occurred while reading from clipboard'
         );
       });
@@ -131,8 +130,8 @@ describe('clipboard', () => {
           })
         );
 
-        await expect(clipboard.readText()).rejects.toThrowError(
-          'An unknown error occurred while reading from clipboard'
+        await expect(clipboard.readText()).rejects.toThrow(
+          'command `pbpaste` exited with code 1'
         );
       });
 
@@ -145,10 +144,9 @@ describe('clipboard', () => {
         );
 
         const error = await clipboard.readText().catch((e) => e);
-        expect(error.cause).toBeInstanceOf(Error);
-        expect(error.cause.message).toContain('`pbpaste`');
-        expect(error.cause.message).toContain('exited with code 2');
-        expect(error.cause.message).toContain('stderr: pbpaste: boom');
+        expect(error.message).toContain('`pbpaste`');
+        expect(error.message).toContain('exited with code 2');
+        expect(error.message).toContain('stderr: pbpaste: boom');
       });
     });
   });
