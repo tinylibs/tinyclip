@@ -30,11 +30,22 @@ describe('clipboard', () => {
     });
 
     function fakeProcess(
-      on: (eventName: 'error' | 'close', cb: (input: any) => void) => void
+      on: (
+        eventName: 'error' | 'close' | 'exit',
+        cb: (input: any) => void
+      ) => void,
+      stderrData?: string
     ) {
       return {
         stdin: {write: vi.fn(), end: vi.fn()},
         stdout: {on: vi.fn()},
+        stderr: {
+          on: vi.fn((eventName: string, cb: (chunk: unknown) => void) => {
+            if (eventName === 'data' && stderrData !== undefined)
+              cb(stderrData);
+          }),
+          destroy: () => {}
+        },
         on
       } as any;
     }
@@ -43,7 +54,7 @@ describe('clipboard', () => {
       it('throws an error if no tool can be found', async () => {
         vi.spyOn(process, 'platform', 'get').mockReturnValue('aix');
 
-        await expect(clipboard.writeText('foo')).rejects.toThrowError(
+        await expect(clipboard.writeText('foo')).rejects.toThrow(
           'No clipboard tool found'
         );
       });
@@ -56,7 +67,7 @@ describe('clipboard', () => {
           })
         );
 
-        await expect(clipboard.writeText('foo')).rejects.toThrowError(
+        await expect(clipboard.writeText('foo')).rejects.toThrow(
           'An error occurred while copying'
         );
       });
@@ -65,13 +76,27 @@ describe('clipboard', () => {
         vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
         vi.mocked(spawn).mockImplementationOnce(() =>
           fakeProcess((eventName, cb) => {
-            if (eventName === 'close') cb(1);
+            if (eventName === 'exit') cb(1);
           })
         );
 
-        await expect(clipboard.writeText('foo')).rejects.toThrowError(
-          'An unknown error occurred while copying'
+        await expect(clipboard.writeText('foo')).rejects.toThrow(
+          'command `pbcopy` exited with code 1'
         );
+      });
+
+      it('surfaces the command, exit code and stderr as the cause', async () => {
+        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+        vi.mocked(spawn).mockImplementationOnce(() =>
+          fakeProcess((eventName, cb) => {
+            if (eventName === 'exit') cb(2);
+          }, 'pbcopy: boom')
+        );
+
+        const error = await clipboard.writeText('foo').catch((e) => e);
+        expect(error.message).toContain('`pbcopy`');
+        expect(error.message).toContain('exited with code 2');
+        expect(error.message).toContain('stderr: pbcopy: boom');
       });
     });
 
@@ -79,7 +104,7 @@ describe('clipboard', () => {
       it('throws an error if no tool can be found', async () => {
         vi.spyOn(process, 'platform', 'get').mockReturnValue('aix');
 
-        await expect(clipboard.readText()).rejects.toThrowError(
+        await expect(clipboard.readText()).rejects.toThrow(
           'No clipboard tool found'
         );
       });
@@ -92,7 +117,7 @@ describe('clipboard', () => {
           })
         );
 
-        await expect(clipboard.readText()).rejects.toThrowError(
+        await expect(clipboard.readText()).rejects.toThrow(
           'An error occurred while reading from clipboard'
         );
       });
@@ -105,9 +130,23 @@ describe('clipboard', () => {
           })
         );
 
-        await expect(clipboard.readText()).rejects.toThrowError(
-          'An unknown error occurred while reading from clipboard'
+        await expect(clipboard.readText()).rejects.toThrow(
+          'command `pbpaste` exited with code 1'
         );
+      });
+
+      it('surfaces the command, exit code and stderr as the cause', async () => {
+        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+        vi.mocked(spawn).mockImplementationOnce(() =>
+          fakeProcess((eventName, cb) => {
+            if (eventName === 'close') cb(2);
+          }, 'pbpaste: boom')
+        );
+
+        const error = await clipboard.readText().catch((e) => e);
+        expect(error.message).toContain('`pbpaste`');
+        expect(error.message).toContain('exited with code 2');
+        expect(error.message).toContain('stderr: pbpaste: boom');
       });
     });
   });
