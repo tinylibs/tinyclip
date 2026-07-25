@@ -1,8 +1,8 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {spawn} from 'node:child_process';
-import {rm, writeFile} from 'node:fs/promises';
+import {mkdtemp, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join} from 'node:path';
+import {delimiter, join} from 'node:path';
 import * as clipboard from '../src/index.js';
 
 vi.mock('node:child_process', async (importOriginal) => {
@@ -102,32 +102,42 @@ describe('clipboard', () => {
         expect(error.message).toContain('stderr: pbcopy: boom');
       });
 
-      it('rejects instead of throwing when the tool exits before reading stdin', async () => {
-        const {spawn: actualSpawn} =
-          await vi.importActual<typeof import('node:child_process')>(
-            'node:child_process'
-          );
-        const tool = join(tmpdir(), `tinyclip-exit-${process.pid}.sh`);
-        await writeFile(tool, '#!/bin/sh\nexit 1\n', {mode: 0o755});
+      it.skipIf(process.platform === 'win32')(
+        'rejects instead of throwing when the tool exits before reading stdin',
+        async () => {
+          // On Linux, `WAYLAND_DISPLAY` makes the chosen tool deterministic.
+          const toolName = process.platform === 'darwin' ? 'pbcopy' : 'wl-copy';
+          const dir = await mkdtemp(join(tmpdir(), 'tinyclip-'));
+          await writeFile(join(dir, toolName), '#!/bin/sh\nexit 1\n', {
+            mode: 0o755
+          });
 
-        const uncaught = vi.fn();
-        process.on('uncaughtException', uncaught);
-        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
-        vi.mocked(spawn).mockImplementationOnce((_command, _args, options) =>
-          actualSpawn(tool, [], options as any)
-        );
+          const uncaught = vi.fn();
+          process.on('uncaughtException', uncaught);
+          const {PATH, WAYLAND_DISPLAY, WSL_DISTRO_NAME} = process.env;
+          process.env.PATH = `${dir}${delimiter}${PATH}`;
+          process.env.WAYLAND_DISPLAY = 'wayland-0';
+          delete process.env.WSL_DISTRO_NAME;
 
-        try {
-          await expect(
-            clipboard.writeText('x'.repeat(1024 * 1024))
-          ).rejects.toThrow();
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          expect(uncaught).not.toHaveBeenCalled();
-        } finally {
-          process.off('uncaughtException', uncaught);
-          await rm(tool, {force: true});
+          try {
+            // Enough data that the write cannot complete before the tool exits.
+            await expect(
+              clipboard.writeText('x'.repeat(1024 * 1024))
+            ).rejects.toThrow();
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            expect(uncaught).not.toHaveBeenCalled();
+          } finally {
+            process.off('uncaughtException', uncaught);
+            process.env.PATH = PATH;
+            if (WAYLAND_DISPLAY === undefined)
+              delete process.env.WAYLAND_DISPLAY;
+            else process.env.WAYLAND_DISPLAY = WAYLAND_DISPLAY;
+            if (WSL_DISTRO_NAME !== undefined)
+              process.env.WSL_DISTRO_NAME = WSL_DISTRO_NAME;
+            await rm(dir, {recursive: true, force: true});
+          }
         }
-      });
+      );
     });
 
     describe('readText()', () => {
