@@ -1,5 +1,8 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {spawn} from 'node:child_process';
+import {rm, writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import * as clipboard from '../src/index.js';
 
 vi.mock('node:child_process', async (importOriginal) => {
@@ -37,7 +40,7 @@ describe('clipboard', () => {
       stderrData?: string
     ) {
       return {
-        stdin: {write: vi.fn(), end: vi.fn()},
+        stdin: {write: vi.fn(), end: vi.fn(), on: vi.fn()},
         stdout: {on: vi.fn()},
         stderr: {
           on: vi.fn((eventName: string, cb: (chunk: unknown) => void) => {
@@ -97,6 +100,33 @@ describe('clipboard', () => {
         expect(error.message).toContain('`pbcopy`');
         expect(error.message).toContain('exited with code 2');
         expect(error.message).toContain('stderr: pbcopy: boom');
+      });
+
+      it('rejects instead of throwing when the tool exits before reading stdin', async () => {
+        const {spawn: actualSpawn} =
+          await vi.importActual<typeof import('node:child_process')>(
+            'node:child_process'
+          );
+        const tool = join(tmpdir(), `tinyclip-exit-${process.pid}.sh`);
+        await writeFile(tool, '#!/bin/sh\nexit 1\n', {mode: 0o755});
+
+        const uncaught = vi.fn();
+        process.on('uncaughtException', uncaught);
+        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+        vi.mocked(spawn).mockImplementationOnce((_command, _args, options) =>
+          actualSpawn(tool, [], options as any)
+        );
+
+        try {
+          await expect(
+            clipboard.writeText('x'.repeat(1024 * 1024))
+          ).rejects.toThrow();
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          expect(uncaught).not.toHaveBeenCalled();
+        } finally {
+          process.off('uncaughtException', uncaught);
+          await rm(tool, {force: true});
+        }
       });
     });
 
