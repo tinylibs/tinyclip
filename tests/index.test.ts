@@ -1,8 +1,5 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {spawn} from 'node:child_process';
-import {mkdtemp, rm, writeFile} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
-import {delimiter, join} from 'node:path';
+import {type ChildProcess, spawn} from 'node:child_process';
 import * as clipboard from '../src/index.js';
 
 vi.mock('node:child_process', async (importOriginal) => {
@@ -50,7 +47,7 @@ describe('clipboard', () => {
           destroy: () => {}
         },
         on
-      } as any;
+      } as unknown as ChildProcess;
     }
 
     describe('writeText()', () => {
@@ -102,42 +99,62 @@ describe('clipboard', () => {
         expect(error.message).toContain('stderr: pbcopy: boom');
       });
 
-      it.skipIf(process.platform === 'win32')(
-        'rejects instead of throwing when the tool exits before reading stdin',
-        async () => {
-          // On Linux, `WAYLAND_DISPLAY` makes the chosen tool deterministic.
-          const toolName = process.platform === 'darwin' ? 'pbcopy' : 'wl-copy';
-          const dir = await mkdtemp(join(tmpdir(), 'tinyclip-'));
-          await writeFile(join(dir, toolName), '#!/bin/sh\nexit 1\n', {
-            mode: 0o755
-          });
+      it('rejects instead of throwing when the tool exits before reading stdin', async () => {
+        const {spawn: realSpawn} =
+          await vi.importActual<typeof import('node:child_process')>(
+            'node:child_process'
+          );
+        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+        vi.mocked(spawn).mockImplementationOnce((_command, _args, options) =>
+          realSpawn(process.execPath, ['-e', 'process.exit(1)'], options)
+        );
 
-          const uncaught = vi.fn();
-          process.on('uncaughtException', uncaught);
-          const {PATH, WAYLAND_DISPLAY, WSL_DISTRO_NAME} = process.env;
-          process.env.PATH = `${dir}${delimiter}${PATH}`;
-          process.env.WAYLAND_DISPLAY = 'wayland-0';
-          delete process.env.WSL_DISTRO_NAME;
+        const uncaught = vi.fn();
+        process.on('uncaughtException', uncaught);
 
-          try {
-            // Enough data that the write cannot complete before the tool exits.
-            await expect(
-              clipboard.writeText('x'.repeat(1024 * 1024))
-            ).rejects.toThrow();
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            expect(uncaught).not.toHaveBeenCalled();
-          } finally {
-            process.off('uncaughtException', uncaught);
-            process.env.PATH = PATH;
-            if (WAYLAND_DISPLAY === undefined)
-              delete process.env.WAYLAND_DISPLAY;
-            else process.env.WAYLAND_DISPLAY = WAYLAND_DISPLAY;
-            if (WSL_DISTRO_NAME !== undefined)
-              process.env.WSL_DISTRO_NAME = WSL_DISTRO_NAME;
-            await rm(dir, {recursive: true, force: true});
-          }
+        try {
+          // Enough data that the write cannot complete before the tool exits.
+          await expect(
+            clipboard.writeText('x'.repeat(1024 * 1024))
+          ).rejects.toThrow();
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          expect(uncaught).not.toHaveBeenCalled();
+        } finally {
+          process.off('uncaughtException', uncaught);
         }
-      );
+      });
+
+      it('rejects if writing to stdin fails but exit is 0', async () => {
+        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+        vi.mocked(spawn).mockImplementationOnce(() => {
+          const proc = fakeProcess((eventName, cb) => {
+            if (eventName === 'exit') {
+              cb(0);
+            }
+          });
+          vi.mocked(proc.stdin!.on).mockImplementation(
+            (eventName: string | symbol, cb: (error: Error) => void) => {
+              if (eventName === 'error') {
+                cb(new Error('write EPIPE'));
+              }
+              return proc.stdin!;
+            }
+          );
+          return proc;
+        });
+
+        try {
+          await clipboard.writeText('foo');
+          expect.fail('Expected writeText to reject');
+        } catch (error) {
+          expect((error as Error).message).toEqual(
+            'An error occurred while copying'
+          );
+          expect(((error as Error).cause as Error).message).toEqual(
+            'write EPIPE'
+          );
+        }
+      });
     });
 
     describe('readText()', () => {
