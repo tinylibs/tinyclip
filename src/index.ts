@@ -150,19 +150,24 @@ export function writeText(text: string): Promise<void> {
     });
 
     let stderr = '';
+    let writeError: Error | undefined;
     proc.stderr.on('data', (chunk) => (stderr += chunk));
     proc.on('error', (cause) =>
       reject(new Error('An error occurred while copying', {cause}))
     );
+    proc.stdin.on('error', (cause) => {
+      writeError = new Error('An error occurred while copying', {cause});
+    });
     // Use 'exit' rather than 'close': some tools (e.g. xclip) daemonize a child
     // that keeps the stderr pipe open, so 'close' would never fire.
     proc.on('exit', (code) => {
       // The daemonized child inherits the stderr pipe, keeping it (and the event
       // loop) open after the parent exits. Destroy it so callers can exit cleanly.
       proc.stderr?.destroy();
-      code === 0
-        ? resolve()
-        : reject(createUnknownError(command, code, stderr));
+      if (code !== 0) {
+        return reject(createUnknownError(command, code, stderr));
+      }
+      writeError ? reject(writeError) : resolve();
     });
 
     proc.stdin.write(text);

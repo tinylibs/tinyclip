@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {spawn} from 'node:child_process';
+import {type ChildProcess, spawn} from 'node:child_process';
 import * as clipboard from '../src/index.js';
 
 vi.mock('node:child_process', async (importOriginal) => {
@@ -37,7 +37,7 @@ describe('clipboard', () => {
       stderrData?: string
     ) {
       return {
-        stdin: {write: vi.fn(), end: vi.fn()},
+        stdin: {write: vi.fn(), end: vi.fn(), on: vi.fn()},
         stdout: {on: vi.fn()},
         stderr: {
           on: vi.fn((eventName: string, cb: (chunk: unknown) => void) => {
@@ -47,7 +47,7 @@ describe('clipboard', () => {
           destroy: () => {}
         },
         on
-      } as any;
+      } as unknown as ChildProcess;
     }
 
     describe('writeText()', () => {
@@ -97,6 +97,63 @@ describe('clipboard', () => {
         expect(error.message).toContain('`pbcopy`');
         expect(error.message).toContain('exited with code 2');
         expect(error.message).toContain('stderr: pbcopy: boom');
+      });
+
+      it('rejects instead of throwing when the tool exits before reading stdin', async () => {
+        const {spawn: realSpawn} =
+          await vi.importActual<typeof import('node:child_process')>(
+            'node:child_process'
+          );
+        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+        vi.mocked(spawn).mockImplementationOnce((_command, _args, options) =>
+          realSpawn(process.execPath, ['-e', 'process.exit(1)'], options)
+        );
+
+        const uncaught = vi.fn();
+        process.on('uncaughtException', uncaught);
+
+        try {
+          // Enough data that the write cannot complete before the tool exits.
+          await expect(
+            clipboard.writeText('x'.repeat(1024 * 1024))
+          ).rejects.toThrow();
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          expect(uncaught).not.toHaveBeenCalled();
+        } finally {
+          process.off('uncaughtException', uncaught);
+        }
+      });
+
+      it('rejects if writing to stdin fails but exit is 0', async () => {
+        vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
+        vi.mocked(spawn).mockImplementationOnce(() => {
+          const proc = fakeProcess((eventName, cb) => {
+            if (eventName === 'exit') {
+              cb(0);
+            }
+          });
+          vi.mocked(proc.stdin!.on).mockImplementation(
+            (eventName: string | symbol, cb: (error: Error) => void) => {
+              if (eventName === 'error') {
+                cb(new Error('write EPIPE'));
+              }
+              return proc.stdin!;
+            }
+          );
+          return proc;
+        });
+
+        try {
+          await clipboard.writeText('foo');
+          expect.fail('Expected writeText to reject');
+        } catch (error) {
+          expect((error as Error).message).toEqual(
+            'An error occurred while copying'
+          );
+          expect(((error as Error).cause as Error).message).toEqual(
+            'write EPIPE'
+          );
+        }
       });
     });
 
