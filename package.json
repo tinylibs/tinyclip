@@ -39,10 +39,10 @@
     "lint:format": "prettier --check ."
   },
   "devDependencies": {
-    "@types/node": "^26.0.1",
-    "@typescript/native-preview": "^7.0.0-dev.20260630.1",
-    "@vitest/coverage-v8": "^4.1.9",
-    "prettier": "^3.9.4",
-    "vitest": "^4.1.9"
+    "@types/node": "^26.1.2",
+    "@typescript/native-preview": "^7.0.0-dev.20260707.2",
+    "@vitest/coverage-v8": "^4.1.10",
+    "prettier": "^3.9.6",
+    "vitest": "^4.1.10"
   }
 }
