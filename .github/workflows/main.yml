@@ -48,7 +48,7 @@ jobs:
             os: ubuntu-latest
             install-cmd: sudo apt-get update && sudo apt-get install -y xsel xvfb
             test-cmd: xvfb-run -a pnpm test
-          # We do not test Wayland nor WSL support as setting this up in CI is tricky
+          # We do not test Wayland support as setting this up in CI is tricky
           # We only test Node 24 on macOS and Windows to reduce CI usage
           - node-version: 24.x
             os: macos-14
@@ -75,3 +75,42 @@ jobs:
         run: pnpm build
       - name: Test
         run: ${{ matrix.test-cmd || 'pnpm test' }}
+
+  # WSL needs its own job: the distribution is installed on a Windows runner and
+  # everything (Node included) has to be set up inside it.
+  test-wsl:
+    needs: lint
+    runs-on: windows-2025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup WSL
+        uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
+        with:
+          distribution: Ubuntu-24.04
+          additional-packages: ca-certificates curl
+      - name: Setup Node
+        shell: wsl-bash {0}
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+          apt-get install -y nodejs
+          # Corepack picks up the pnpm version pinned in `package.json`,
+          # the same way `pnpm/action-setup` does for the other jobs.
+          # Job-level `env` does not cross into WSL, hence the `export`.
+          export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+          corepack enable pnpm
+          corepack install
+      - name: Install Dependencies, Build & Test
+        shell: wsl-bash {0}
+        run: |
+          # Work outside of the Windows drive mount: pnpm relies on symlinks,
+          # which are slow and unreliable on drvfs.
+          cp -r . ~/tinyclip
+          cd ~/tinyclip
+          export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+          pnpm install
+          pnpm build
+          # Warm up the Windows interop layer so the first PowerShell spawn of
+          # the test run does not hit the 3s timeout.
+          powershell.exe -NoProfile -Command exit
+          pnpm test
