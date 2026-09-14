@@ -49,7 +49,7 @@ jobs:
       - run: npm install -g npm@~11.10.0 # Work-around for https://github.com/npm/cli/issues/9151#issuecomment-4131466208
       - run: npm install -g npm@latest
       - run: pnpm build
-      - run: pnpm version ${TAG_NAME} --git-tag-version=false
+      - run: pnpm version ${TAG_NAME} --no-git-tag-version
         env:
           TAG_NAME: ${{ github.ref_name }}
       - run: npm stage publish --provenance --access public --tag next
