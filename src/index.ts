@@ -31,8 +31,9 @@ function createUnknownError(
   return new Error(details);
 }
 
+// The `.exe` suffix is required by WSL and harmless on Windows itself.
 const WINDOWS_READ_COMMAND: Command = [
-  'powershell',
+  'powershell.exe',
   [
     '-NoProfile',
     '-Command',
@@ -97,8 +98,9 @@ export function readText(): Promise<string> {
   });
 }
 
+// The `.exe` suffix is required by WSL and harmless on Windows itself.
 const WINDOWS_WRITE_COMMAND: Command = [
-  'powershell',
+  'powershell.exe',
   [
     '-NoProfile',
     '-Command',
